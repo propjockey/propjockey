@@ -1,0 +1,44 @@
+{
+  "name": "propjockey",
+  "version": "0.0.1",
+  "author": "James0x57",
+  "description": "Animate anything with PropJockey. Wicked fast, reusable javascript animations. Ideal for professional game development, easy enough for beginners.",
+  "license": "BSD 2-Clause",
+  "homepage": "https://propjockey.xyz",
+  "keywords": [
+    "animations",
+    "game development",
+    "keyframes",
+    "tween",
+    "prop jockey"
+  ],
+  "main": "dist/cjs/lib/propjockey",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "grunt test --stack",
+    "prepublish": "./node_modules/.bin/grunt build"
+  },
+  "steal": {
+    "main": "src/propjockey",
+    "npmIgnore": [
+      "testee"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/propjockey/propjockey"
+  },
+  "devDependencies": {
+    "grunt": "^1.0.3",
+    "grunt-cli": "^1.3.2",
+    "grunt-eslint": "^21.0.0",
+    "grunt-steal": "^2.0.0",
+    "grunt-testee": "^1.1.0",
+    "steal": "^2.1.14",
+    "steal-qunit": "^1.0.2",
+    "steal-tools": "^2.0.11",
+    "wabt": "^1.0.10"
+  }
+}
