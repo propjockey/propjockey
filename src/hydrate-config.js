@@ -34,7 +34,7 @@ const hydrateConfig = function (config) {
   config.timingPool = config.timingPool || "timing.requestAnimationFrame"
   config.defaultEase = config.defaultEase || "ease.linear"
   config.defaultSlide = config.defaultSlide || "slide.number"
-  config.defaultSetter = config.defaultSetter || "setter.element.cssVar"
+  config.defaultSetter = config.defaultSetter || "setter.object.prop"
 
   hydrateConfigKeys(config, configPropList)
 

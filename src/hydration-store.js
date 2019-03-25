@@ -1,5 +1,5 @@
 import TimingPool from "./timing-pool"
-import { instance } from "../wasm/easing.wasmi.js"
+import { instance } from "./easing.transpiled.wasm.js"
 
 // You can provide custom functions or override default ones before calling `new PropJockey(config)`
 // This enables complex (and CUSTOM) config to be serialized/stored as JSON and safely come from users if you first populate the store.
@@ -20,6 +20,8 @@ import { instance } from "../wasm/easing.wasmi.js"
 
 
 const hydrationStore = {
+  TimingPool, // access to the TimingPool constructor to make custom pools for the store or for one-off use
+
   get: function (maybeKey) {
     const val = this[maybeKey]
     if (val) {
@@ -109,7 +111,7 @@ const hydrationStore = {
         return memoized[memoKey]
       }
       const cacheOffset = instance.exports.cacheCubicBezier(xd1, yd1, xd2, yd2)
-      return memoized[memoKey] = instance.exports.cachedEasing.bind(cacheOffset)
+      return memoized[memoKey] = instance.exports.cachedEasing.bind(undefined, cacheOffset)
     }
   })(),
 
@@ -137,9 +139,12 @@ const hydrationStore = {
   "ease.out-back": ["factory.cubic-bezier", 0.18, 0.89, 0.32, 1.28],
   "ease.linear-out,slow-in": ["factory.cubic-bezier", 0, 0, 0.2, 1],
 
-  "setter.element.cssVar": (obj, propName, prop, newVal) => obj.style.setProperty(propName, newVal + (prop.unit || 0)),
-  "setter.element.cssVar.raw": (obj, propName, prop, newVal) => obj.style.setProperty(propName, newVal),
-  "setter.object.prop.round": (obj, propName, prop, newVal) => obj[propName] = Math.round(newVal) + (prop.unit || 0),
+  "setter.object.prop": (obj, propName, newVal, prop) => obj[propName] = newVal,
+  "setter.object.prop.unit": (obj, propName, newVal, prop) => obj[propName] = newVal + prop.unit,
+  "setter.object.prop.round": (obj, propName, newVal, prop) => obj[propName] = Math.round(newVal),
+  "setter.object.prop.round.unit": (obj, propName, newVal, prop) => obj[propName] = Math.round(newVal) + prop.unit,
+  "setter.element.cssVar": (obj, propName, newVal, prop) => obj.style.setProperty(propName, newVal),
+  "setter.element.cssVar.unit": (obj, propName, newVal, prop) => obj.style.setProperty(propName, newVal + prop.unit),
 
   // TOOD: default text/string animation sliders
   "slide.number": instance.exports.slide,
@@ -176,9 +181,9 @@ hydrationStore["slide.color.hex"] = (function () {
     })
 
     color1.replace(rxSplitRGB, function (x, rr, gg, bb) {
-      r = slide(parseInt(rr, 16), r2, amount)
-      g = slide(parseInt(gg, 16), g2, amount)
-      b = slide(parseInt(bb, 16), b2, amount)
+      r = Math.round(Math.max(Math.min(slide(parseInt(rr, 16), r2, amount), 0xFF), 0))
+      g = Math.round(Math.max(Math.min(slide(parseInt(gg, 16), g2, amount), 0xFF), 0))
+      b = Math.round(Math.max(Math.min(slide(parseInt(bb, 16), b2, amount), 0xFF), 0))
     })
     return colorString(r, g, b)
   }

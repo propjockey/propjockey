@@ -38,7 +38,7 @@ AnimationInstanceState.prototype = {
 
     const delayConfig = repeatCount ? animationConfig.repeatDelay : animationConfig.initialDelay
     const delayRemaining = typeof delayConfig === "function" ? delayConfig(this, object) : delayConfig
-    this.delayRemaining = delayRemaining
+    this.delayRemaining = delayRemaining || 0
 
     return repeatCount
   },
@@ -117,7 +117,7 @@ AnimationInstanceState.prototype = {
       return false
     }
     this.previousPosition = this.currentPosition
-    this.currentPosition += currentTimestampDelta * currentSpeed
+    this.currentPosition += currentTimestampDelta * (currentSpeed < 0 ? -1 : 1)
     this.currentTimestampDelta = 0
     // if speed is 0, flag as paused so it won't run again next frame
     // (can be manually unpaused while still 0 to force setters to run for next frame)

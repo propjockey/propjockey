@@ -56,12 +56,16 @@ PropJockey.prototype = {
 
   // stop (object),
   stop: function (object) {
-    const objectsInProgress = this.config.timingPool.objectsInProgress
+    const timingPool = this.config.timingPool
+    const objectsInProgress = timingPool.objectsInProgress
     const animationStateMaps = objectsInProgress.get(object)
     if (animationStateMaps) {
       animationStateMaps.delete(this) // remove animationInstanceState
       if (!animationStateMaps.size) {
         objectsInProgress.delete(object)
+        if (!objectsInProgress.size) {
+          timingPool.stop()
+        }
       }
     }
     return this
@@ -82,7 +86,7 @@ PropJockey.prototype = {
   // resume (object) // continue playback at previously set speed
   resume: function (object) {
     const animationInstanceState = this.animationState(object) || {}
-    this.speed(object, animationInstanceState.resumeSpeed)
+    return this.speed(object, animationInstanceState.resumeSpeed || 1)
   },
   // resumeBatch (batchName),
   // resumeAll (),

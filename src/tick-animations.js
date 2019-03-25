@@ -52,14 +52,14 @@ const tickAnimationOnObject = function (animationInstanceState, animation) {
       // TODO: pass in animation instance to slide fn ^ so they can cache values while sliding
       // pass the value to the setter
       const setter = propConfig.setter || animationConfig.defaultSetter
-      setter(objectInProgress, propName, propConfig, finalValue)
+      setter(objectInProgress, propName, finalValue, propConfig)
     } else if (valFrom === undefined && valTo !== undefined && currentSpeed < 0 && instancePropState.currentKeyframe > -1) {
       // before the first frame for this prop, moving backwards, and was previously in a frame for this prop
-      (propConfig.setter || animationConfig.defaultSetter)(objectInProgress, propName, propConfig, valTo)
+      (propConfig.setter || animationConfig.defaultSetter)(objectInProgress, propName, valTo, propConfig)
       instancePropState.currentKeyframe = -1
     } else if (valTo === undefined && valFrom !== undefined && currentSpeed > 0 && instancePropState.currentKeyframe < keyframesLength) {
       // after the last frame for this prop, moving forwards, and was previously in a frame for this prop
-      (propConfig.setter || animationConfig.defaultSetter)(objectInProgress, propName, propConfig, valFrom)
+      (propConfig.setter || animationConfig.defaultSetter)(objectInProgress, propName, valFrom, propConfig)
       instancePropState.currentKeyframe = keyframesLength
     }
   }

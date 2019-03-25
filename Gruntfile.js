@@ -24,8 +24,12 @@ module.exports = function (grunt) {
           config: "package.json!npm"
         },
         outputs: {
-          "+cjs": {},
-          "+amd": {},
+          "+cjs": {
+            dest: moduleName => __dirname + "/dist/cjs/" + moduleName.replace(/propjockey.*src\//i, "") + ".js"
+          },
+          "+amd": {
+            dest: moduleName => __dirname + "/dist/amd/" + moduleName.replace(/propjockey.*src\//i, "") + ".js"
+          },
           "+global-js": {},
           "min": {
             format: "global",
@@ -58,35 +62,33 @@ module.exports = function (grunt) {
       src: ["test/test.html"]
     },
     "wasm": {
-      wat: {
+      wast: {
         cwd: "src/",
-        src: ["**/*.wat"],
+        src: ["**/*.wast"],
         expand: true,
         dest: "wasm/",
-        ext: ".wasm"
+        ext: ".compiled.wasm"
       },
       portable: {
         cwd: "wasm/",
         src: ["**/*.wasm"],
         expand: true,
-        dest: "wasm/",
-        ext: ".wasmi.js"
+        dest: "src/",
+        ext: ".transpiled.wasm.js"
       }
     }
   })
 
-  // src/**/*.wat -> wasm/*.wasm
-  // wasm/**/*.wasm -> wasm/**/*.wasm.js
   grunt.registerMultiTask("wasm", function () {
-    if (this.data.ext === ".wasm") {
-      // compile wat into wasm
+    if (this.data.ext === ".compiled.wasm") {
+      // compile wast into wasm
       this.files.forEach(file => {
         const src = file.src
         const dest = file.dest
         grunt.log.writeln((src + " -> " + dest).grey)
 
-        const wat = grunt.file.read(src)
-        const wasmModule = wabt.parseWat("module.wast", wat)
+        const wast = grunt.file.read(src)
+        const wasmModule = wabt.parseWat("module.wast", wast)
         const { buffer } = wasmModule.toBinary({})
 
         grunt.file.write(dest, new Buffer(buffer))
@@ -111,6 +113,6 @@ module.exports = function (grunt) {
       })
     }
   })
-  grunt.registerTask("build", ["wasm:wat", "wasm:portable", "steal-export"])
+  grunt.registerTask("build", ["wasm:wast", "wasm:portable", "steal-export"])
   grunt.registerTask("test", ["eslint", "testee"])
 }
