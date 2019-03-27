@@ -11,7 +11,7 @@ QUnit.module("PropJockey", function (hooks) {
   test("import should work", t => {
     t.ok(PropJockey, "exists")
     t.ok(PropJockey.hydrationStore, "hydrationStore attached")
-    t.ok(PropJockey.hydrationStore.TimingPool, "hydrationStore has reference to TimingPool constructor")
+    t.ok(PropJockey.TimingPool, "hydrationStore has reference to TimingPool constructor")
   })
 
   test("Minimum instance, defaults and expectations", t => {
@@ -52,7 +52,7 @@ QUnit.module("PropJockey", function (hooks) {
 
   test("animations work", t => {
     const jockeyMyProps = { thisprophere: 10, andthisonetoo: "1verypx", andadashofcolor: "#000000" }
-    const timingPool = new PropJockey.hydrationStore.TimingPool()
+    const timingPool = new PropJockey.TimingPool()
     const anim = new PropJockey({
       name: "hello world",
       timingPool,

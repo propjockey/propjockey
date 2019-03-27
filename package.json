@@ -1,6 +1,6 @@
 {
   "name": "propjockey",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "James0x57",
   "description": "Animate anything with PropJockey. Wicked fast, reusable javascript animations. Ideal for professional game development, easy enough for beginners.",
   "license": "BSD 2-Clause",
@@ -12,7 +12,7 @@
     "tween",
     "prop jockey"
   ],
-  "main": "dist/cjs/lib/propjockey",
+  "main": "dist/cjs/propjockey",
   "directories": {
     "test": "test"
   },

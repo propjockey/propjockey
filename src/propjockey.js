@@ -1,5 +1,5 @@
 import hydrateConfig from "./hydrate-config"
-import hydrationStore from "./hydration-store"
+import { hydrationStore, utils } from "./hydration-store"
 import AnimationInstanceState from "./animation-instance-state"
 
 function PropJockey (config) {
@@ -9,11 +9,19 @@ function PropJockey (config) {
   this.name = config.name || ""
 }
 
-/* Constructor Properties */
+/* Constructor Properties and Methods */
 PropJockey.hydrationStore = hydrationStore
-
-/* Constructor Methods */
-// none
+Object.assign(PropJockey, utils)
+/*
+  PropJockey.TimingPool // TimingPool constructor
+  PropJockey.wasmExports // direct access to the wasm internals
+  PropJockey.checkEaseCacheStatus // pass in an ease function to get info about its cache for debugging or advanced management
+  // if the cache is valid and reusable, the object returned will have a ts:timestamp for when it was cached and the wasm cacheOffset
+  PropJockey.freeReusableCache // pass in an ease function and an object {any details} to free the cache of that ease function
+  // if the ease function wasn't from reusable cache, nothing happens. If it was reusable, easeFn will weakmap it to the details
+  // object passed in merged with {ts:timestamp, from:"free-reusable-cache", valid:false}. checkEaseCacheStatus returns this object.
+  PropJockey.freeAllReusableCache // takes an object {any details} and invalidates all reusable ease caches
+*/
 
 PropJockey.prototype = {
   /* Instance Properties */

@@ -1,5 +1,5 @@
 import TimingPool from "./timing-pool"
-import { instance } from "./easing.transpiled.wasm.js"
+import { wasmHydrations, wasmUtils } from "./wasm-hydrations.js"
 
 // You can provide custom functions or override default ones before calling `new PropJockey(config)`
 // This enables complex (and CUSTOM) config to be serialized/stored as JSON and safely come from users if you first populate the store.
@@ -18,10 +18,7 @@ import { instance } from "./easing.transpiled.wasm.js"
 // number -> sameNumber
 // function -> sameFunction
 
-
 const hydrationStore = {
-  TimingPool, // access to the TimingPool constructor to make custom pools for the store or for one-off use
-
   get: function (maybeKey) {
     const val = this[maybeKey]
     if (val) {
@@ -70,75 +67,6 @@ const hydrationStore = {
   "value.from.element.cssVar": (obj, propName, animationConfig, kfPos) => parseFloat(obj.style.getProperyValue(propName)),
   "value.from.element.cssVar.raw": (obj, propName, animationConfig, kfPos) => obj.style.getProperyValue(propName),
 
-  "factory.steps": (num, timing) => {
-    // todo: finish this, wasm it
-    // const holdTime = 1 / num
-    let stepsModded = num
-    let jumpStart = 0
-    // jump-end / end is default behavior
-    if (timing === "jump-none") {
-      stepsModded--
-    }
-    if (timing === "jump-both") {
-      stepsModded++
-      jumpStart = 1
-    }
-    if (timing === "jump-start" || timing === "start") {
-      jumpStart = 1
-    }
-    const stepSize = 1 / stepsModded
-
-    return t => {
-      if (t <= 0) {
-        return 0
-      }
-      if (t >= 1) {
-        return 1
-      }
-      const indexLeft = jumpStart + ~~(t * num)
-      return indexLeft * stepSize
-    }
-  },
-
-  "ease.step-start": t => t <= 0 ? 0 : 1, // ["factory.steps", 1, "jump-start"]
-  "ease.step-end": t => t >= 1 ? 1 : 0, // ["factory.steps", 1, "jump-end"]
-
-  "factory.cubic-bezier": (() => {
-    const memoized = { "0,0,1,1": timePosition => timePosition }
-    return function (xd1, yd1, xd2, yd2) {
-      const memoKey = [...arguments].join(",")
-      if (memoized[memoKey]) {
-        return memoized[memoKey]
-      }
-      const cacheOffset = instance.exports.cacheCubicBezier(xd1, yd1, xd2, yd2)
-      return memoized[memoKey] = instance.exports.cachedEasing.bind(undefined, cacheOffset)
-    }
-  })(),
-
-  "ease.linear": ["factory.cubic-bezier", 0.0, 0.0, 1.0, 1.0],
-  "ease.ease": ["factory.cubic-bezier", 0.25, 0.1, 0.25, 1.0],
-  "ease.ease-in": ["factory.cubic-bezier", 0.42, 0, 1.0, 1.0],
-  "ease.ease-out": ["factory.cubic-bezier", 0, 0, 0.58, 1.0],
-  "ease.ease-in-out": ["factory.cubic-bezier", 0.42, 0, 0.58, 1.0],
-
-  "ease.in-sine": ["factory.cubic-bezier", 0.47, 0, 0.75, 0.72],
-  "ease.in-quadratic": ["factory.cubic-bezier", 0.55, 0.09, 0.68, 0.53],
-  "ease.in-cubic": ["factory.cubic-bezier", 0.55, 0.06, 0.68, 0.19],
-  "ease.in-back": ["factory.cubic-bezier", 0.6, -0.28, 0.74, 0.05],
-  "ease.fast-out,linear-in": ["factory.cubic-bezier", 0.4, 0, 1, 1],
-
-  "ease.in-out-sine": ["factory.cubic-bezier", 0.45, 0.05, 0.55, 0.95],
-  "ease.in-out-quadratic": ["factory.cubic-bezier", 0.46, 0.03, 0.52, 0.96],
-  "ease.in-out-cubic": ["factory.cubic-bezier", 0.65, 0.05, 0.36, 1],
-  "ease.in-out-back": ["factory.cubic-bezier", 0.68, -0.55, 0.27, 1.55],
-  "ease.fast-out,slow-in": ["factory.cubic-bezier", 0.4, 0, 0.2, 1],
-
-  "ease.out-sine": ["factory.cubic-bezier", 0.39, 0.58, 0.57, 1],
-  "ease.out-quadratic": ["factory.cubic-bezier", 0.25, 0.46, 0.45, 0.94],
-  "ease.out-cubic": ["factory.cubic-bezier", 0.22, 0.61, 0.36, 1],
-  "ease.out-back": ["factory.cubic-bezier", 0.18, 0.89, 0.32, 1.28],
-  "ease.linear-out,slow-in": ["factory.cubic-bezier", 0, 0, 0.2, 1],
-
   "setter.object.prop": (obj, propName, newVal, prop) => obj[propName] = newVal,
   "setter.object.prop.unit": (obj, propName, newVal, prop) => obj[propName] = newVal + prop.unit,
   "setter.object.prop.round": (obj, propName, newVal, prop) => obj[propName] = Math.round(newVal),
@@ -147,9 +75,29 @@ const hydrationStore = {
   "setter.element.cssVar.unit": (obj, propName, newVal, prop) => obj.style.setProperty(propName, newVal + prop.unit),
 
   // TOOD: default text/string animation sliders
-  "slide.number": instance.exports.slide,
   "slide.number.js": (from, to, amount) => ((to - from) * amount) + from
 }
+
+// adds the ease functions, slide functions, and anything else thats sped up with propjockey.wasm
+Object.assign(hydrationStore, wasmHydrations)
+
+// utils will all be bound directly to PropJockey
+const utils = Object.assign({
+  // access to the TimingPool constructor to make custom pools for the store or for one-off use
+  TimingPool,
+  // mostly for tests; You shouldn't ever _have to_ use this unless deliberately making advanced tooling,
+  // or doing advanced preloading of specific/limited sets of ease functions per level/section/spa page/etc
+  resetEaseStoreAndAllCaches: function (details) {
+    // freeAllMemoizedAndReusableEaseCaches shouldn't be used without this wrapper
+    // because the store could be left with ease functions bound to freed memory.
+    wasmUtils.freeAllMemoizedAndReusableEaseCaches.call(this, details || {})
+    Object.keys(wasmHydrations).forEach(wasmKey => {
+      if (wasmKey.startsWith("ease.")) {
+        hydrationStore[wasmKey] = wasmHydrations[wasmKey]
+      }
+    })
+  }
+}, wasmUtils)
 
 hydrationStore["yodawg.easing"] = function (...easings) {
   const easingFns = easings.map(easing => hydrationStore.get(easing))
@@ -158,36 +106,8 @@ hydrationStore["yodawg.easing"] = function (...easings) {
   }
 }
 // TODO: bouncy customs
-// TODO: quadratic factory and defaults
+// TODO: quadratic defaults
 // TODO: yodawg -> flicker
 
-hydrationStore["slide.color.hex"] = (function () {
-  const slide = hydrationStore["slide.number"]
-
-  const rxLast6 = /.*(.{6})$/
-  const rxSplitRGB = /#?(..)(..)(..)/
-  // r, g, and b are integers in range [0, 255]
-  const colorString = function (r, g, b) {
-    const rgb = "000000" + (r << 16 | g << 8 | b).toString(16)
-    return "#" + rgb.replace(rxLast6, "$1")
-  }
-
-  return function (color1, color2, amount) {
-    var r, g, b, r2, g2, b2
-    color2.replace(rxSplitRGB, function (x, rr, gg, bb) {
-      r2 = parseInt(rr, 16)
-      g2 = parseInt(gg, 16)
-      b2 = parseInt(bb, 16)
-    })
-
-    color1.replace(rxSplitRGB, function (x, rr, gg, bb) {
-      r = Math.round(Math.max(Math.min(slide(parseInt(rr, 16), r2, amount), 0xFF), 0))
-      g = Math.round(Math.max(Math.min(slide(parseInt(gg, 16), g2, amount), 0xFF), 0))
-      b = Math.round(Math.max(Math.min(slide(parseInt(bb, 16), b2, amount), 0xFF), 0))
-    })
-    return colorString(r, g, b)
-  }
-})()
-
-export { hydrationStore }
+export { hydrationStore, utils }
 export default hydrationStore
